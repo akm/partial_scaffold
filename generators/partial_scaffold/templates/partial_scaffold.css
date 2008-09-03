@@ -72,3 +72,14 @@ div.progressBar div.background {
   width: 0%;
 }
 
+.content_pane {
+  margin: 5px;
+  padding: 5px;
+  border: 4px dotted gray;
+}
+
+.item_content_pane{
+  margin: 2px;
+  padding: 2px;
+  border-bottom: 2px dotted gray;
+}

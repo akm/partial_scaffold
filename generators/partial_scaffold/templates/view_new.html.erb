@@ -2,9 +2,11 @@
 
 <%% form_for :<%= controller_singular_name %>, @<%= controller_singular_name %>, 
     :url => url_for(:controller => '<%= controller_name %>', :action => 'create') do |f| -%>
-  <script>var base_pane_controller = new PartialResource.New("<%= controller_plural_name %>");</script>
-  <%%= f.error_messages %>
-  <%%= render :partial => "new", :locals => {:f => f} %>
+  <div class="content_pane">
+    <script>var base_pane_controller = new PartialResource.New("<%= controller_plural_name %>");</script>
+    <%%= f.error_messages %>
+    <%%= render :partial => "new", :locals => {:f => f} %>
+  </div>
 
   <% sub_controllers.each do |sub_controller| -%>
     <% 
@@ -24,7 +26,7 @@
        }
        if reflection.macro == :has_many
          options['action_pane'] = "action_pane_#{base_name}"
-         options['pane_class_name'] = "item_content_pane_#{base_name}"
+         options['pane_class_name'] = "item_content_pane_#{base_name} item_content_pane"
        end
 
        def to_js_object_string(obj) 
@@ -44,7 +46,7 @@
     </script>
     <% if reflection.macro == :has_one -%>
 
-      <div id="<%= options['content_pane'] %>">
+      <div id="<%= options['content_pane'] %>" class="content_pane">
         <%% @<%= singularized_name %> = @<%= controller_singular_name %>.<%= sub_controller %> || <%= reflection.class_name %>.new -%>
         <%%= render :partial => "<%= sub_controller_full_name %>/new" %>
         <%% @<%= singularized_name %> = nil -%>
@@ -52,20 +54,21 @@
       <script><%= pane_controller %>.activate();</script>
 
     <% else -%>
-
-      <div id="<%= options['content_pane'] %>">
-        <%% @<%= controller_singular_name %>.<%= sub_controller_name %>.each do |<%= singularized_name %>| -%>
-          <div class="<%= options['pane_class_name'] %>">
-            <%% @<%= singularized_name %> = <%= singularized_name %> -%>
-            <%%= render :partial => "<%= sub_controller_full_name %>/new" %>
-            <%% @<%= singularized_name %> = nil -%>
-          </div>
-        <%% end -%>
+      <div class="content_pane">
+        <div id="<%= options['content_pane'] %>">
+          <%% @<%= controller_singular_name %>.<%= sub_controller_name %>.each do |<%= singularized_name %>| -%>
+            <div class="<%= options['pane_class_name'] %>">
+              <%% @<%= singularized_name %> = <%= singularized_name %> -%>
+              <%%= render :partial => "<%= sub_controller_full_name %>/new" %>
+              <%% @<%= singularized_name %> = nil -%>
+            </div>
+          <%% end -%>
+        </div>
+        <div id="<%= options['action_pane'] %>" class="action_pane">
+          <a href="javascript:void(0)" class="link_to_add">Add</a>
+        </div>
+        <script><%= pane_controller %>.activate();</script>
       </div>
-      <div id="<%= options['action_pane'] %>">
-        <a href="javascript:void(0)" class="link_to_add">Add</a>
-      </div>
-      <script><%= pane_controller %>.activate();</script>
 
     <% end -%>
 
