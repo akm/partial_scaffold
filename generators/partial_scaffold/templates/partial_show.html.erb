@@ -1,0 +1,9 @@
+<% for attribute in attributes -%>
+<p>
+  <b><%= attribute.column.human_name %>:</b>
+  <%%=h @<%= controller_singular_name %>.<%= attribute.name %> %>
+</p>
+
+<% end -%>
+
+<%%= link_to "Edit", {:action => 'edit', :id=> @<%= controller_singular_name %>.id}, :class => "link_to_edit" %>
