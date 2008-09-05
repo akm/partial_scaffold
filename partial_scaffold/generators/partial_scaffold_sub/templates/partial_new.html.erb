@@ -1,0 +1,24 @@
+<%% method_args = params[:submittable] ? 
+    [:form_for, :<%= controller_singular_name %>, @<%= controller_singular_name %>, {:url => url_for(:controller => '<%= controller_file_path %>', :action => 'create')}] : 
+    [:fields_for, :<%= controller_singular_name %>] -%>
+<%% send(*method_args) do |f| %>
+  <%%= f.error_messages %>
+
+<% for attribute in attributes -%>
+  <p>
+    <%%= f.label :<%= attribute.name %> %><br />
+    <%%= f.<%= attribute.field_type %> :<%= attribute.name %> %>
+  </p>
+<% end -%>
+
+
+<%% if params[:submittable] -%>
+  <p>
+    <%%= f.hidden_field :<%= foreign_key_name %> %>
+    <%%= f.submit "Create", :class => "redirect_to show" %>
+    <input type="hidden" name="submittable" value="true"/>
+  </p>
+<%% end -%>
+
+  <a href="javascript:void(0)" class="link_to_destroy">Delete</a>
+<%% end %>
