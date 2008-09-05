@@ -6,4 +6,5 @@
 
 <% end -%>
 
-<%%= link_to "Edit", {:controller => '<%= controller_name -%>', :action => 'edit', :id => @<%= controller_singular_name %>.id}, :class => "link_to_edit" %>
+<%%= link_to "Edit", {:controller => '<%= controller_file_path -%>', :action => 'edit', :id => @<%= controller_singular_name %>.id}, :class => "link_to_edit" %> |
+<%%= link_to "Delete", {:controller => '<%= controller_file_path -%>', :action => 'destroy', :id => @<%= controller_singular_name %>.id}, :class => "link_to_destroy" %>

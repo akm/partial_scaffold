@@ -9,7 +9,7 @@
   </p>
 <% end -%>
   <p>
-    <%%= f.submit "Update", :class => "redirect_to show" %>
-    <%%= link_to "cancel", url_for(:controller => '<%= controller_name %>', :action => "show", :id => @<%= controller_singular_name %>.id), :class => "link_to_edit_cancel" %>
+    <input type="submit" class="redirect_to show" value="Update"/>
+    <%%= link_to "cancel", {:action => "show", :id => @<%= controller_singular_name %>.id}, :class => "link_to_edit_cancel" %>
   </p>
 <%% end %>

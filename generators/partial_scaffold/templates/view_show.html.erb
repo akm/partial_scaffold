@@ -3,7 +3,8 @@
 <script>
 var base_pane_controller = new PartialResource.Editable(null, "<%= controller_plural_name %>", {
   url_to_show: "<%%= url_for(:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id) %>",
-  content_pane: "content_pane_<%= controller_singular_name %>"
+  content_pane: "content_pane_<%= controller_singular_name %>",
+  ajax_delete_parameters: "<%%= '%s=%s' % [request_forgery_protection_token, escape_javascript(form_authenticity_token)] %>"
 });
 </script>
 <div id="content_pane_<%= controller_singular_name %>" class="content_pane">
@@ -85,5 +86,4 @@ var base_pane_controller = new PartialResource.Editable(null, "<%= controller_pl
   <% end -%>
 <% end -%>
 
-<%%= link_to 'Edit', :action => 'edit', :id => @<%= controller_singular_name %>.id %> |
 <%%= link_to 'Back', :action => 'index' %>

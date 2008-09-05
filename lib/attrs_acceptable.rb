@@ -13,6 +13,7 @@ module AttrsAcceptable
   module ClassMethods
     private
     def acceptable_options!(original_options)
+      return nil unless original_options[:acceptable]
       acceptable = (original_options || {}).delete(:acceptable) || {}
       acceptable = {:suffix => acceptable.to_s} unless acceptable.is_a?(Hash)
       acceptable[:class_name] = original_options[:class_name]
@@ -23,14 +24,14 @@ module AttrsAcceptable
     def has_many_with_attr_acceptable(association_id, options = {})
       acceptable_options = acceptable_options!(options)
       result = has_many_without_attr_acceptable(association_id, options)
-      has_many_acceptable(association_id, acceptable_options)
+      has_many_acceptable(association_id, acceptable_options) if acceptable_options
       result
     end
     
     def has_one_with_attr_acceptable(association_id, options = {})
       acceptable_options = acceptable_options!(options)
       result = has_one_without_attr_acceptable(association_id, options)
-      has_one_acceptable(association_id, acceptable_options)
+      has_one_acceptable(association_id, acceptable_options) if acceptable_options
       result
     end
     
@@ -59,8 +60,15 @@ module AttrsAcceptable
       has_many_name = has_many_name.to_s
       attr_name = "#{has_many_name}_#{(options[:suffix] || "attrs").to_s}"
       class_name = options[:class_name] || has_many_name.classify
+      raise_if_instance_method_exist(
+        "instanciate_#{has_many_name}", "validate_with_#{has_many_name}")
+      unless self.instance_methods.include?(attr_name.to_s)
+        self.module_eval(<<-"EOS")
+          attr_accessor :#{attr_name}
+        EOS
+      end
+      
       self.module_eval(<<-"EOS")
-        attr_accessor :#{attr_name}
         before_validation_on_create :instanciate_#{has_many_name}
 
         def instanciate_#{has_many_name}
@@ -76,5 +84,13 @@ module AttrsAcceptable
         alias_method :validate, :validate_with_#{has_many_name}
       EOS
     end
+      
+    private 
+      def raise_if_instance_method_exist(*methods)
+        methods.each do |m|
+          next unless self.instance_methods.include?(m.to_s)
+          raise "#{m} is already defined!"
+        end
+      end
   end
 end

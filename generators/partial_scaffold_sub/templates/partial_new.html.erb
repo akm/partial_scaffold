@@ -15,7 +15,7 @@
 <%% if params[:submittable] -%>
   <p>
     <%%= f.hidden_field :<%= foreign_key_name %> %>
-    <%%= f.submit "Create", :class => "redirect_to show" %>
+    <input type="submit" class="redirect_to show" value="Create"/>
     <input type="hidden" name="submittable" value="true"/>
   </p>
 <%% end -%>

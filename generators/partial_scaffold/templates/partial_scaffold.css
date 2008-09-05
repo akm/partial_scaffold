@@ -80,6 +80,6 @@ div.progressBar div.background {
 
 .item_content_pane{
   margin: 2px;
-  padding: 2px;
-  border-bottom: 2px dotted gray;
+  padding: 2px 2px 7px 2px;
+  border-bottom: 4px dotted gray;
 }

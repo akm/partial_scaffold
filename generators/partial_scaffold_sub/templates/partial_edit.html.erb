@@ -10,8 +10,8 @@
   </p>
 <% end -%>
   <p>
-    <%%= f.submit "Update", :class => "redirect_to show" %>
-    <%%= link_to "cancel", url_for(:controller => '<%= controller_name %>', :action => "show", :id => @<%= controller_singular_name %>.id), :class => "link_to_edit_cancel" %>
-    <%%= link_to "Delete", url_for(:controller => '<%= controller_name %>', :action => "destroy", :id => @<%= controller_singular_name %>.id), :class => "link_to_destroy" %>
+    <input type="submit" class="redirect_to show" value="Update"/> |
+    <%%= link_to "cancel", {:controller => '<%= controller_file_path -%>', :action => "show", :id => @<%= controller_singular_name %>.id}, :class => "link_to_edit_cancel" %> |
+    <%%= link_to "Delete", {:controller => '<%= controller_file_path -%>', :action => "destroy", :id => @<%= controller_singular_name %>.id}, :class => "link_to_destroy" %>
   </p>
 <%% end %>

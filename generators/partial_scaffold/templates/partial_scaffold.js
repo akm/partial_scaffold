@@ -11,7 +11,7 @@ PartialResource.Base.prototype = {
         this.content_pane = $(this.content_pane); 
         this.initialize_contents();
     },
-    
+
     // must implement "initialize_contents: function(){}"
 
     initialize_actions: function(pane){
@@ -40,6 +40,22 @@ PartialResource.Base.prototype = {
                 Event.observe(element, "click", handler.bindAsEventListener(this));
             }
         }
+    },
+    
+    root_controller: function(){
+        return this.owner ? this.owner.root_controller() : this;
+    },
+    
+    ajax_delete: function(url, element_id){
+        var delete_parameters = this.root_controller().ajax_delete_parameters;
+        if (delete_parameters == null){
+            throw new Error("'ajax_delete_parameters' option is not specified");
+        }
+        new Ajax.Request(url,
+            { method: 'post',
+              parameters: '_method=delete&redirection=render_null&' + delete_parameters,
+              onComplete: function(){Element.remove($(element_id));} 
+            });
     }
 }
 
@@ -113,6 +129,18 @@ PartialResource.HasManyMethods = {
 
     record_pane_class: function(){
         return this.pane_class_name || (this.controller + "_content");
+    },
+
+    find_item_for: function(pane){
+        var pane = $(pane);
+        if (this.items == null)
+            return null;
+        for(var i = 0; i < this.items.length; i++){
+            var item = this.items[i];
+            if (item.content_pane == pane)
+                return item;
+        }
+        return null;
     }
 }
 
@@ -166,7 +194,23 @@ PartialResource.Editable.SubmittableMethods = {
     update_contents: function(){
         this.initialize_actions(this.content_pane);
         var form = this.get_form();
-        if (form){
+        if (form) {
+            // Ajax can't send "multipart/form-data" .
+            // So you can use responds_to_parent plugin if you need to upload files with ajax.
+            // http://code.google.com/p/responds-to-parent/source/checkout
+            // So PartialResource doesn't handle submit event if form's target is set 
+            // because the plugin uses form "target" attribute.
+            if (form.target) {
+                // Add hidden field in form for sending item_pane_id parameter even if not using Ajax. 
+                if (this.content_pane) {
+                    var content_pane_hidden = document.createElement("INPUT");
+                    content_pane_hidden.type = "hidden";
+                    content_pane_hidden.name = "item_pane_id";
+                    content_pane_hidden.value = this.content_pane.id;
+                    form.appendChild(content_pane_hidden);
+                }
+                return;
+            }
             if (form.onsubmit)
                 throw new Error("Found onsubmit event handler for the form in " + this.content_pane.tagName + "#" + this.content_pane.id + 
                                 "\nYou must delete onsubmit for it.");
@@ -185,6 +229,8 @@ PartialResource.Editable.SubmittableMethods = {
         }
         var params = Form.serialize(form);
         params = "redirection=" + (redirection || this.edit_redirection || "show") + "&" + params;
+        if (this.content_pane && this.content_pane.id)
+          params = params  + "&item_pane_id=" + this.content_pane.id;
         new Ajax.Updater(this.content_pane, form.action, 
                          {asynchronous:true, evalScripts:true, parameters: params,
                           onComplete: this.initialize_contents.bind(this)});
@@ -293,8 +339,7 @@ Object.extend(PartialResource.EditableHasManyItem.prototype, {
                 });
             }
         } else {
-            
+            this.ajax_delete(this.url_to_destroy, this.content_pane);
         }
     }
-    
 });
