@@ -86,7 +86,7 @@ PartialResource.New.FieldCustomizeMethods = {
             var field = fields[i];
             for(var key in this.field_names_to){
                 if (field.name.include(key)){
-                    field.name = field.name.gsub(key, this.field_names_to[key]);
+                    field.name = field.name.sub(key, this.field_names_to[key]);
                     break;
                 }
             }
