@@ -1,0 +1,32 @@
+<%% cascade_dispaly_field(@<%= controller_singular_name %>) do |f| -%>
+  <%% form_fragment = render :partial => "<%= controller_name %>/form", :locals => {:f => f, :form_type => :show} %>
+  <%% if params[:show_partial_base_only] -%>
+    <%%= form_fragment %>
+  <%% else -%>
+    <%%= f.yield(:head_of_cascade) %>
+    <%% uniq_id = uniq_tag_id("partial_base") -%>
+    <div id="<%%= uniq_id %>" class="partial_base">
+      <%%= form_fragment %>
+    </div>
+    <%%= partial_scaffold.setup_show(uniq_id) %>
+
+<% (controller_association_names || []).compact.each do |association_name| -%>
+    <h2><%= association_name %></h2>
+    <%% @<%= controller_singular_name %>.<%= association_name %>.each do |<%= association_name.to_s.singularize %>| -%>
+      <div class="partial_group">
+        <%% backup_instance_variable("@<%= association_name.to_s.singularize %>", <%= association_name.to_s.singularize %>) do -%>
+          <%%= render :partial => "<%= controller_name %>/<%= association_name %>/show" %>
+        <%% end -%>
+      </div>
+    <%% end -%>
+    <%% uniq_id = uniq_tag_id("partial_base_actions") -%>
+    <div id="<%%= uniq_id %>" class="actions">
+      <%%= link_to 'New <%= association_name.to_s.singularize %>', {:controller => '<%= controller_name %>/<%= association_name %>', :action => 'new', :<%= model_class.reflections[association_name.to_sym].primary_key_name %> => @<%= controller_singular_name %>.id},
+          :class => "action link_to_new countup:<%= association_name %>" %>
+    </div>
+    <%%= partial_scaffold.setup_parent_of_actions(uniq_id) %>
+<% end -%>
+
+    <%%= f.yield(:tail_of_cascade)  %>
+  <%% end -%>
+<%% end -%>
