@@ -214,7 +214,9 @@ Object.extend(PartialScaffold.prototype, {
             parameters: this.auth_token_param + "&_method=delete",
             onComplete: function(){
                 var partial_group = Element.getAncestorByClassName(partial_base, this.partial_group_class);
-                Element.remove(partial_group);
+                if (partial_base.innerHTML == ""){
+                    Element.remove(partial_group);
+                }
             }.bind(this)
         });
     },

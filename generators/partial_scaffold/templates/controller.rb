@@ -86,7 +86,7 @@ class <%= controller_class_name %>Controller < ApplicationController
       if @<%= controller_singular_name %>.errors.empty?
         format.html {
           request.xhr? ? 
-            render(:text => nil) :
+            render(:text => nil, :layout => false) :
             redirect_to(:controller => '<%= controller_name %>', :action => 'index')
         }
         format.xml  { head :ok }
