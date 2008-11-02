@@ -46,6 +46,9 @@ end
 
 class PartialScaffoldGenerator < Rails::Generator::NamedBase
   class Attribute < Rails::Generator::GeneratedAttribute
+
+    attr_accessor :selectable_attr_type, :selectable_attr_base_name, :selectable_attr_enum
+    
     def initialize(column, reflection = nil)
       @column = column
       @name, @type = column.name, column.type.to_sym
@@ -55,6 +58,10 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
     def field_type
       if @reflection
         return :belongs_to_field if @reflection.macro == :belongs_to
+      elsif selectable_attr_type == :single
+        return :select
+      elsif selectable_attr_type == :multi
+        return :check_box_group
       end
       super
     end
@@ -68,7 +75,15 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
       end
     end
     
-    def test_data_expression
+    def data_in_functional_test
+      if selectable_attr_type and selectable_attr_enum
+        case selectable_attr_type
+        when :single
+          return selectable_attr_enum.entries.first.id.inspect
+        when :multi
+          return selectable_attr_enum.entries.map(&:id).inspect
+        end
+      end
       case type
       when :boolean           then 'true'
       when :integer           then '1' 
@@ -83,6 +98,27 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
       end
     end
     
+    def name_to_show
+      case selectable_attr_type
+      when :single
+        "#{selectable_attr_base_name}_name"
+      when :multi
+        "#{selectable_attr_base_name}_names"
+      else
+        name
+      end
+    end
+    
+    def name_in_code
+      case selectable_attr_type
+      when :single
+        "#{selectable_attr_base_name}_key"
+      when :multi
+        "#{selectable_attr_base_name}_keys"
+      else
+        name
+      end
+    end
   end
   
   def self.model_name_to_controller_name
@@ -105,6 +141,7 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
                 :controller_resource_name_singularized,
                 :controller_resource_name,
                 :route_primary_key_name,
+                :controller_reflections,
                 :attrs_expression_for_test
   
   alias_method  :controller_table_name, :controller_plural_name
@@ -137,19 +174,28 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
     @controller_resource_name = path_parts.join('_')
     @controller_resource_name_singularized = @controller_resource_name.singularize
     
-    @reflections = @model_class.reflections
+    @controller_reflections = @model_class.reflections
     
     except_col_names = ['id', @route_primary_key_name]
     columns = @model_class.columns.select{|col| !except_col_names.include?(col.name) }
     columns = columns.select{|col| !%w(created_at updated_at).include?(col.name)} unless options[:add_timestamps]
     
     column_to_reflection = {}
-    @reflections.each do |name, reflection|
+    @controller_reflections.each do |name, reflection|
       column_to_reflection[reflection.primary_key_name.to_s] = reflection
     end
     
+    ignore_selectable_attr = options[:ignore_selectable_attr] || !(Module.const_get(:SelectableAttr) rescue nil)
     @attributes = columns.map do |column| 
-      Attribute.new(column, column_to_reflection[column.name.to_s])
+      attr = Attribute.new(column, column_to_reflection[column.name.to_s])
+      unless ignore_selectable_attr
+        attr.selectable_attr_type = @model_class.selectable_attr_type_for(column.name.to_s)
+        if attr.selectable_attr_type
+          attr.selectable_attr_base_name = @model_class.enum_base_name(column.name.to_s)
+          attr.selectable_attr_enum = @model_class.enum_for(column.name.to_s)
+        end
+      end
+      attr
     end
     
     @attrs_expression_for_test = test_attrs_expression(@attributes)
@@ -190,7 +236,7 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
     result = []
     test_attr_names.each do |attr_name|
       attr = attributes_hash[attr_name]
-      result << ':%s => %s' % [attr_name, attr.test_data_expression]
+      result << ':%s => %s' % [attr_name, attr.data_in_functional_test]
     end
     '{%s}' % result.join(', ')
   rescue Exception => e
@@ -288,6 +334,8 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
     opt.separator 'Options:'
     opt.on("--add-timestamps",
       "Add timestamps to the view files for this model") { |v| options[:add_timestamps] = v }
+    opt.on("--ignore-selectable-attr",
+      "Don't generate field for selectable_attr plugin") { |v| options[:ignore_selectable_attr] = v }
   end
   
 end

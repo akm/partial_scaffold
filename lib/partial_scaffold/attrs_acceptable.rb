@@ -46,13 +46,6 @@ module PartialScaffold
           end
 
           def #{attr_name}=(value)
-            if value.is_a?(Hash)
-              new_value = []
-              value.keys.map(&to_i).sort.each do |key|
-                new_value << value[key]
-              end
-              value = new_value
-            end
             @#{attr_name} = value
           end
 

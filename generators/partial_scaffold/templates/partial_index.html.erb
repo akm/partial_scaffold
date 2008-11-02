@@ -17,8 +17,8 @@
         <span class="invisible selection_name"><%%=h <%= singular_name %>.<%= PartialScaffold.caption_method_for(model_class) %> %></span>
       </td>
     <%% else -%>
-      <td><%%= link_to 'Show', :action => 'show', :id => <%= singular_name %>.id %></td> |
-      <td><%%= link_to 'Edit', :action => 'edit', :id => <%= singular_name %>.id %></td> |
+      <td><%%= link_to 'Show', :action => 'show', :id => <%= singular_name %>.id %></td>
+      <td><%%= link_to 'Edit', :action => 'edit', :id => <%= singular_name %>.id %></td>
       <td><%%= link_to 'Destroy', {:action => 'destroy', :id => <%= singular_name %>.id}, :confirm => 'Are you sure?', :method => :delete %></td>
     <%% end -%>
   </tr>

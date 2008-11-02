@@ -8,21 +8,41 @@
   </div>
   <%%= partial_scaffold.setup_new(uniq_id, f.ajax_form_required?) %>
 
-<% (controller_association_names || []).compact.each do |association_name| -%>
-  <h2><%= association_name %></h2>
-  <%% f.each_of_object(:<%= association_name %>) do |<%= association_name.to_s.singularize %>| -%>
-    <%% reserve_cascade_form_name_path("<%= association_name %>") do -%>
-      <div class="partial_group">
-        <%%= render :partial => "<%= controller_name %>/<%= association_name %>/new" %>
-      </div>
+<% (controller_association_names || []).compact.each do |association_name|
+     reflection = controller_reflections[association_name]  -%>
+  <%% association_id = uniq_tag_id("<%= association_name %>") -%>
+  <div class="partial_association" id="<%%= association_id %>">
+    <h2><%= association_name %></h2>
+<% if reflection.macro == :has_one -%>
+    <%% f.each_of_object(:<%= association_name %>) do |<%= association_name.to_s.singularize %>| -%>
+      <%% reserve_cascade_form_name_path("<%= association_name %>") do -%>
+        <div class="partial_group partial_association_to:<%%= association_id %>">
+          <%%= render :partial => "<%= controller_name %>/<%= association_name %>/new" %>
+        </div>
+      <%% end -%>
     <%% end -%>
-  <%% end -%>
-  <%% uniq_id = uniq_tag_id("partial_base_actions") -%>
-  <div id="<%%= uniq_id %>" class="partial_actions">
-    <%%= link_to 'New <%= association_name.to_s.singularize %>', {:controller => '<%= controller_name %>/<%= association_name %>', :action => 'new', :no_form_required => true},
-        :class => "action link_to_new cascade_name_base:#{f.cascade_name_base('<%= association_name %>')} cascade_count:#{f.object.<%= association_name %>.length}" %>
+    <%% uniq_id = uniq_tag_id("partial_base_actions") -%>
+    <div id="<%%= uniq_id %>" class="partial_actions partial_association_to:<%%= association_id %>">
+      <%%= link_to 'New <%= association_name.to_s.singularize %>', {:controller => '<%= controller_name %>/<%= association_name %>', :action => 'new', :no_form_required => true},
+          :class => "action link_to_new cascade_name:#{f.cascade_name_base('<%= association_name %>')} cascade_count_max:1" %>
+    </div>
+    <%%= partial_scaffold.setup_actions(uniq_id) %>
+<% else -%>
+    <%% f.each_of_object(:<%= association_name %>) do |<%= association_name.to_s.singularize %>| -%>
+      <%% reserve_cascade_form_name_path("<%= association_name %>") do -%>
+        <div class="partial_group partial_association_to:<%%= association_id %>">
+          <%%= render :partial => "<%= controller_name %>/<%= association_name %>/new" %>
+        </div>
+      <%% end -%>
+    <%% end -%>
+    <%% uniq_id = uniq_tag_id("partial_base_actions") -%>
+    <div id="<%%= uniq_id %>" class="partial_actions partial_association_to:<%%= association_id %>">
+      <%%= link_to 'New <%= association_name.to_s.singularize %>', {:controller => '<%= controller_name %>/<%= association_name %>', :action => 'new', :no_form_required => true},
+          :class => "action link_to_new cascade_name_base:#{f.cascade_name_base('<%= association_name %>')} cascade_count:#{f.object.<%= association_name %>.length}" %>
+    </div>
+    <%%= partial_scaffold.setup_actions(uniq_id) %>
+<% end -%>
   </div>
-  <%%= partial_scaffold.setup_actions(uniq_id) %>
 <% end -%>
 
   <%%= f.yield(:tail_of_cascade)  %>

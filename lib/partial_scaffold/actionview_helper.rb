@@ -37,7 +37,9 @@ module PartialScaffold
         :instance_variable_name => "@#{attr_name.to_s.singularize}"
       }.update(options || {})
       instance_variable_name = options[:instance_variable_name]
-      object.send(attr_name).each do |attr|
+      attr = object.send(attr_name)
+      attr = attr.respond_to?(:each) ? attr : attr.nil? ? [] : [attr]
+      attr.each do |attr|
         backup_instance_variable(instance_variable_name, attr) do
           yield(attr)
         end
