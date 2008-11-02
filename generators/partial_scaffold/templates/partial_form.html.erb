@@ -1,0 +1,37 @@
+<%%= f.error_messages %>
+
+<% attributes.each do |attribute|  -%>
+<p>
+  <%%= f.label :<%= attribute.name %> %><br />
+  <%%= f.<%= attribute.field %> %>
+</p>
+<% end -%>
+
+<%% case form_type -%>
+<%% when :show -%>
+  <p>
+    <%%= link_to "Edit", {:controller => '<%= controller_name %>', :action => 'edit', :id => @<%= controller_singular_name %>.id}, :class => "action link_to_edit" %> |
+    <%%= link_to "Delete", {:controller => '<%= controller_name %>', :action => 'destroy', :id => @<%= controller_singular_name %>.id}, :class => "action link_to_destroy" %>
+  </p>
+
+<%% when :new -%>
+<% if route_primary_key_name -%>
+  <%%= f.hidden_field(:<%= route_primary_key_name %>) if f.ajax_form_required? -%>
+<% end -%>
+  <p>
+    <a href="javascript:void(0)" class="action link_to_cancel_new">Delete</a>
+  </p>
+  <%% f.content_for :tail_of_cascade do -%>
+    <%%= submit_tag("Create") unless f.no_form_required? -%>
+  <%% end -%>
+
+<%% when :edit -%>
+<% if route_primary_key_name -%>
+  <%%= f.hidden_field(:<%= route_primary_key_name %>) -%>
+<% end -%>
+  <p>
+    <input type="submit" class="redirect_to show" value="Update"/> |
+    <%%= link_to "Cancel", {:controller => '<%= controller_name %>', :action => "show", :id => @<%= controller_singular_name %>.id}, :class => "action link_to_cancel_edit" %> |
+    <%%= link_to "Delete", {:controller => '<%= controller_name %>', :action => "destroy", :id => @<%= controller_singular_name %>.id}, :class => "action link_to_destroy" %>
+  </p>
+<%% end -%>
