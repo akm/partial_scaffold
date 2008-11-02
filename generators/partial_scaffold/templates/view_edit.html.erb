@@ -1,0 +1,12 @@
+<h1>Editing <%= controller_singular_name %></h1>
+
+<%%= partial_scaffold.initialize_js -%>
+
+<div class="partial_group" >
+  <%%= render :partial => "edit" %>
+</div>
+
+<%%= link_to 'Show', {:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id} %>
+
+<hr/>
+<%%= link_to 'Back', :controller => '<%= controller_name %>', :action => 'index' %>
