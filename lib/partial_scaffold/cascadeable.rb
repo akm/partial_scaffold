@@ -32,7 +32,7 @@ module PartialScaffold
     end
     
     def content_name(name)
-      "#{name}_#{self.object_id}"
+      "#{name}_#{self.object_id}".gsub(/[-\.]/, '')
     end
     
     def content_for(name, content = nil, &block)
