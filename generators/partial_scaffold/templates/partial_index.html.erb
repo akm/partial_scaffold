@@ -1,0 +1,30 @@
+<table>
+  <tr>
+<% for attribute in attributes -%>
+    <th><%= attribute.column.human_name %></th>
+<% end -%>
+  </tr>
+
+<%% for <%= singular_name %> in @<%= controller_plural_name %> %>
+  <tr>
+<% for attribute in attributes -%>
+    <td><%%=h <%= singular_name %>.<%= attribute.name %> %></td>
+<% end -%>
+    <%% if params[:selection] -%>
+      <td>
+        <%%= link_to 'Select', {:action => 'show', :id => <%= singular_name %>.id}, :class => 'link_to_selection' %>
+        <span class="invisible selection_id"><%%=h <%= singular_name %>.id %></span>
+        <span class="invisible selection_name"><%%=h <%= singular_name %>.<%= PartialScaffold.caption_method_for(model_class) %> %></span>
+      </td>
+    <%% else -%>
+      <td><%%= link_to 'Show', :action => 'show', :id => <%= singular_name %>.id %></td>
+      <td><%%= link_to 'Edit', :action => 'edit', :id => <%= singular_name %>.id %></td>
+      <td><%%= link_to 'Destroy', {:action => 'destroy', :id => <%= singular_name %>.id}, :confirm => 'Are you sure?', :method => :delete %></td>
+    <%% end -%>
+  </tr>
+<%% end %>
+</table>
+
+<br />
+
+<%%= link_to 'New <%= controller_singular_name %>', :action => 'new' %>
