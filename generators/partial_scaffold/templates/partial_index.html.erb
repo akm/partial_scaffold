@@ -8,7 +8,7 @@
 <%% for <%= singular_name %> in @<%= controller_plural_name %> %>
   <tr>
 <% for attribute in attributes -%>
-    <td><%%=h <%= singular_name %>.<%= attribute.name %> %></td>
+    <td><%%=h <%= singular_name %>.<%= attribute.name_to_show %> %></td>
 <% end -%>
     <%% if params[:selection] -%>
       <td>

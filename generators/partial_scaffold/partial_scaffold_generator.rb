@@ -103,7 +103,7 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
       when :single
         "#{selectable_attr_base_name}_name"
       when :multi
-        "#{selectable_attr_base_name}_names"
+        "#{selectable_attr_base_name}_names.join(', ')"
       else
         name
       end
