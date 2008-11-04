@@ -148,79 +148,81 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
 
   def initialize(runtime_args, runtime_options = {})
     super(runtime_args, runtime_options)
-    @model_class = class_name.constantize
-    @controller_name = @args.shift || @name.pluralize
-    
-    PartialScaffoldGenerator.model_name_to_controller_name[class_name] = @controller_name
-    
-    associations_expr = @args.shift || ""
-    @route_primary_key_name = @args.shift
     begin
-      @associations = eval(associations_expr, TOPLEVEL_BINDING)
+      @model_class = class_name.constantize
+      @controller_name = @args.shift || @name.pluralize
+
+      PartialScaffoldGenerator.model_name_to_controller_name[class_name] = @controller_name
+
+      associations_expr = @args.shift || ""
+      @route_primary_key_name = @args.shift
+      begin
+        @associations = eval(associations_expr, TOPLEVEL_BINDING)
+      rescue Exception => e
+        raise "failed to eval: #{associations_expr} cause of #{e.message}"
+      end
+
+      base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(@controller_name)
+      @controller_class_name_without_nesting, @controller_file_name, @controller_plural_name = inflect_names(base_name)
+      @controller_singular_name = @controller_file_name.singularize
+
+      @controller_class_name = @controller_class_nesting.empty? ?
+      @controller_class_name_without_nesting :
+        "#{@controller_class_nesting}::#{@controller_class_name_without_nesting}"
+
+      path_parts = @controller_file_path.split('/')
+      path_parts = path_parts[0..-2].map{|name| name.singularize} << path_parts[-1]
+      @controller_resource_name = path_parts.join('_')
+      @controller_resource_name_singularized = @controller_resource_name.singularize
+
+      @controller_reflections = @model_class.reflections
+
+      except_col_names = ['id', @route_primary_key_name]
+      columns = @model_class.columns.select{|col| !except_col_names.include?(col.name) }
+      columns = columns.select{|col| !%w(created_at updated_at).include?(col.name)} unless options[:add_timestamps]
+
+      column_to_reflection = {}
+      @controller_reflections.each do |name, reflection|
+        column_to_reflection[reflection.primary_key_name.to_s] = reflection
+      end
+
+      ignore_selectable_attr = options[:ignore_selectable_attr] || !(Module.const_get(:SelectableAttr) rescue nil)
+      @attributes = columns.map do |column| 
+        attr = Attribute.new(column, column_to_reflection[column.name.to_s])
+        unless ignore_selectable_attr
+          attr.selectable_attr_type = @model_class.selectable_attr_type_for(column.name.to_s)
+          if attr.selectable_attr_type
+            attr.selectable_attr_base_name = @model_class.enum_base_name(column.name.to_s)
+            attr.selectable_attr_enum = @model_class.enum_for(column.name.to_s)
+          end
+        end
+        attr
+      end
+
+      @attrs_expression_for_test = test_attrs_expression(@attributes)
+
+      @controller_association_names = nil
+      if @associations.is_a?(Hash)
+        @controller_association_names = @associations.keys
+      elsif @associations.is_a?(Array)
+        @controller_association_names = []
+        @associations.each do |association|
+          if association.is_a?(Hash)
+            association.keys.each{|key| @controller_association_names << key }
+          elsif association.is_a?(Array)
+            association.each{|key| @controller_association_names << key }
+          else
+            @controller_association_names << association
+          end
+        end
+      else
+        @controller_association_names = [@associations]
+      end
     rescue Exception => e
-      raise "failed to eval: #{associations_expr} cause of #{e.message}"
+      puts e.message
+      puts e.backtrace.join("\n  ")
+      raise e
     end
-
-    base_name, @controller_class_path, @controller_file_path, @controller_class_nesting, @controller_class_nesting_depth = extract_modules(@controller_name)
-    @controller_class_name_without_nesting, @controller_file_name, @controller_plural_name = inflect_names(base_name)
-    @controller_singular_name = @controller_file_name.singularize
-
-    @controller_class_name = @controller_class_nesting.empty? ?
-    @controller_class_name_without_nesting :
-      "#{@controller_class_nesting}::#{@controller_class_name_without_nesting}"
-    
-    path_parts = @controller_file_path.split('/')
-    path_parts = path_parts[0..-2].map{|name| name.singularize} << path_parts[-1]
-    @controller_resource_name = path_parts.join('_')
-    @controller_resource_name_singularized = @controller_resource_name.singularize
-    
-    @controller_reflections = @model_class.reflections
-    
-    except_col_names = ['id', @route_primary_key_name]
-    columns = @model_class.columns.select{|col| !except_col_names.include?(col.name) }
-    columns = columns.select{|col| !%w(created_at updated_at).include?(col.name)} unless options[:add_timestamps]
-    
-    column_to_reflection = {}
-    @controller_reflections.each do |name, reflection|
-      column_to_reflection[reflection.primary_key_name.to_s] = reflection
-    end
-    
-    ignore_selectable_attr = options[:ignore_selectable_attr] || !(Module.const_get(:SelectableAttr) rescue nil)
-    @attributes = columns.map do |column| 
-      attr = Attribute.new(column, column_to_reflection[column.name.to_s])
-      unless ignore_selectable_attr
-        attr.selectable_attr_type = @model_class.selectable_attr_type_for(column.name.to_s)
-        if attr.selectable_attr_type
-          attr.selectable_attr_base_name = @model_class.enum_base_name(column.name.to_s)
-          attr.selectable_attr_enum = @model_class.enum_for(column.name.to_s)
-        end
-      end
-      attr
-    end
-    
-    @attrs_expression_for_test = test_attrs_expression(@attributes)
-    
-    @controller_association_names = nil
-    if @associations.is_a?(Hash)
-      @controller_association_names = @associations.keys
-    elsif @associations.is_a?(Array)
-      @controller_association_names = []
-      @associations.each do |association|
-        if association.is_a?(Hash)
-          association.keys.each{|key| @controller_association_names << key }
-        elsif association.is_a?(Array)
-          association.each{|key| @controller_association_names << key }
-        else
-          @controller_association_names << association
-        end
-      end
-    else
-      @controller_association_names = [@associations]
-    end
-  rescue Exception => e
-    puts e.message
-    puts e.backtrace.join("\n  ")
-    raise e
   end
   
   def test_attrs_expression(attributes)
@@ -324,7 +326,7 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
   
   SCAFFOLD_VIEWS = %w(index show new edit)
   SCAFFOLD_PARTIALS = %w(index form show new edit)
-  
+
   def banner
     "Usage: #{$0} partial_scaffold ModelName ControllerName \"association expression\" [primary_key_name]"
   end

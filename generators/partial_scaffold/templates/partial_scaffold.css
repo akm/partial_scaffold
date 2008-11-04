@@ -52,6 +52,10 @@ a:hover { color: #fff; background-color:#000; }
   list-style: square;
 }
 
+.invisible {
+    display:none;
+}
+
 div.uploadStatus {
   margin: 5px;
 }

@@ -1,1 +1,24 @@
-./script/generate partial_scaffold MODEL CONTROLLERNAME
+./script/generate partial_scaffold ModelName ControllerName "association expression" [primary_key_name] [options]
+
+example #1
+  class Person
+    has_one :postal_address
+    has_many :emails
+  end
+
+  ruby script/generate partial_scaffold Person people "[:postal_address, :emails]"
+
+
+example #2
+  class Company
+    has_many :branches
+  end
+
+  class Branch
+    has_many :departments
+  end
+
+  class Department
+  end
+
+  ruby script/generate partial_scaffold Company comp "{:branches => :departments}"
