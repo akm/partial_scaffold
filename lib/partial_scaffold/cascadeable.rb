@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 module PartialScaffold
   module Cascadeable
     def self.included(base)
@@ -32,7 +33,7 @@ module PartialScaffold
     end
     
     def content_name(name)
-      "#{name}_#{self.object_id}"
+      "#{name}_#{self.object_id}".gsub(/[-\.]/, '') # object_idはマイナスの数値の場合があります。
     end
     
     def content_for(name, content = nil, &block)

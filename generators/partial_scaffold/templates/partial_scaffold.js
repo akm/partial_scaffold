@@ -29,7 +29,7 @@ Object.extend(Element.ClassNames.prototype, {
     }
 });
 
-Object.extend(Element, {
+Object.extend(Element.Methods, {
     getClassValue: function(element, key){
         if (!(element = $(element))) return;
         var classNames = new Element.ClassNames(element);
@@ -40,10 +40,8 @@ Object.extend(Element, {
         if (!(element = $(element))) return;
         var classNames = new Element.ClassNames(element);
         return classNames.setValue(key, value);
-    }
-});
+    },
 
-Object.extend(Element.Methods, {
     getAncestorByClassName: function(element, className){
         var ancestors = $A(Element.ancestors(element));
         for(var i=0; i<ancestors.length; i++){
@@ -65,8 +63,10 @@ Object.extend(Element.Methods, {
         return null;
     }
 });
-Element.getAncestorByClassName = Element.Methods.getAncestorByClassName;
-Element.getAncestorByTagName = Element.Methods.getAncestorByTagName;
+$A(['getClassValue', 'setClassValue', 
+    'getAncestorByClassName', 'getAncestorByTagName']).each(function(m){
+    Element[m] = Element.Methods[m];
+});
 
 
 PartialScaffold = Class.create();
@@ -80,6 +80,9 @@ Object.extend(PartialScaffold.prototype, {
         this.options = Object.extend({}, options || {});
         this.partial_base_class = this.options["partial_base_class"] || "partial_base";
         this.partial_group_class = this.options["partial_group_class"] || "partial_group";
+        this.partial_actions_class = this.options["partial_actions_class"] || "partial_actions";
+        this.partial_association_class = this.options["partial_association_class"] || "partial_association";
+        this.partial_association_to_base_class = this.options["partial_association_to_base"] || "partial_association_to";
     },
 
     bind_with_action_links: function(area, block_by_link_class){
@@ -99,7 +102,7 @@ Object.extend(PartialScaffold.prototype, {
                 var method = this[method_name];
                 if (method == null){
                     alert(method_name + " isn't defined.");
-                    // throw new Error(method_name + " isn't defined.");
+                    throw new Error(method_name + " isn't defined.");
                     continue;
                 }
                 link.onClick = "";
@@ -130,12 +133,6 @@ Object.extend(PartialScaffold.prototype, {
         Element.addClassName(form, "prepared");
     },
 
-    setup_base_pane: function(partial_base, block_by_link_class){
-        if (partial_base == null)
-            throw new Error("no " + this.partial_base_class + " specified for setup_base_pane.");
-        this.bind_with_action_links(partial_base, block_by_link_class);
-    },
-
     inc_cascade_count: function(link){
         var classNames = new Element.ClassNames(link);
         var value = classNames.getValue("cascade_count");
@@ -144,21 +141,77 @@ Object.extend(PartialScaffold.prototype, {
         return value;
     },
 
+    check_visible_by_cascade_count_max: function(pane){
+        this.logIfVerbose("check_visible_by_cascade_count_max");
+        this.logIfVerbose(pane);
+        var pane = $(pane);
+        var partial_association = Element.hasClassName(pane, this.partial_association_class) ? pane :
+            Element.hasClassName(pane, this.partial_group_class) ? Element.getAncestorByClassName(pane, this.partial_association_class) :  
+            Element.hasClassName(pane, this.partial_base_class) ? Element.getAncestorByClassName(pane, this.partial_association_class) : 
+            Element.hasClassName(pane, this.partial_actions_class) ? Element.getAncestorByClassName(pane, this.partial_association_class) :null;
+        if (partial_association == null)
+            return ;
+        partial_association = $(partial_association);
+        var target_class_name =  this.partial_association_to_base_class + ':' + partial_association.id;
+        var targets = $(partial_association).getElementsByClassName(target_class_name);
+        var partial_associated_actions_array = [];
+        var partial_associated_groups = [];
+        for(var i=0; i<targets.length; i++){
+            var target = $(targets[i]);
+            var dest = target.hasClassName(this.partial_actions_class) ? 
+                partial_associated_actions_array : partial_associated_groups;
+            dest.push(target);
+        }
+        var partial_associated_groups_length = partial_associated_groups.length;
+        for(var i=0; i<partial_associated_actions_array.length; i++){
+            var partial_associated_actions = $(partial_associated_actions_array[i]);
+            var links = partial_associated_actions.getElementsByClassName('link_to_new');
+            for(var j=0; j<links.length; j++){
+                var link = $(links[j]);
+                var cascade_count_max = Element.getClassValue(link, "cascade_count_max");
+                if (cascade_count_max != null){
+                    cascade_count_max = Number(cascade_count_max);
+                    if (partial_associated_groups_length >= cascade_count_max){
+                        link.hide();
+                    } else {
+                        link.show();
+                    }
+                }
+            }
+        }
+    },
+
+    setup_base_pane: function(partial_base, block_by_link_class){
+        if (partial_base == null)
+            throw new Error("no " + this.partial_base_class + " specified for setup_base_pane.");
+        this.bind_with_action_links(partial_base, block_by_link_class);
+        this.check_visible_by_cascade_count_max(partial_base);
+    },
+
     link_to_new: function(event){
         var link = Event.element(event);
-        var position_pane = document.createElement('div');
-        Element.addClassName(position_pane, this.partial_group_class);
-        Element.insert(link.parentNode, {before: position_pane});
+        var partial_association = Element.getAncestorByClassName(link, 'partial_association');
+        var partial_group = document.createElement('div');
+        Element.addClassName(partial_group, this.partial_group_class);
+        Element.addClassName(partial_group, this.partial_association_to_base_class + ":" + partial_association.id);
+        Element.insert(link.parentNode, {before: partial_group});
         var parameters = ""
-        var cascade_name = Element.getClassValue(link, "cascade_name_base");
-        if (cascade_name) {
-            cascade_name = cascade_name + "[" + this.inc_cascade_count(link)  + "]";
+        var cascade_name_base = Element.getClassValue(link, "cascade_name_base");
+        if (cascade_name_base) {
+            var cascade_name = cascade_name_base + "[" + this.inc_cascade_count(link)  + "]";
             parameters = parameters + "cascade_name=" + cascade_name;
+        } else {
+            var cascade_name = Element.getClassValue(link, "cascade_name");
+            if (cascade_name)
+                parameters = parameters + "cascade_name=" + cascade_name;
         }
-        new Ajax.Updater(position_pane, link.href, {
+        new Ajax.Updater(partial_group, link.href, {
             method: 'get',
             evalScripts: true,
-            parameters: parameters
+            parameters: parameters,
+            onComplete: function(){
+                this.check_visible_by_cascade_count_max(partial_association);
+            }.bind(this)
         });
     },
 
@@ -171,6 +224,7 @@ Object.extend(PartialScaffold.prototype, {
             var form = Element.getAncestorByTagName(partial_base, "form");
             this.bind_form(form, "submit_to_create");
         }
+        this.check_visible_by_cascade_count_max(partial_base);
     },
 
     submit_to_create: function(event){
@@ -184,9 +238,12 @@ Object.extend(PartialScaffold.prototype, {
     },
 
     link_to_cancel_new: function(event){
+        this.logIfVerbose("link_to_cancel_new");
         var link = Event.element(event);
         var partial_group = Element.getAncestorByClassName(link, this.partial_group_class);
+        var partial_association = Element.getAncestorByClassName(link, this.partial_association_class);
         Element.remove(partial_group);
+        this.check_visible_by_cascade_count_max(partial_association);
     },
 
     setup_show: function(partial_base){
@@ -194,6 +251,7 @@ Object.extend(PartialScaffold.prototype, {
         if (partial_base == null)
             throw new Error("no " + this.partial_base_class + " specified for setup_show.");
         this.bind_with_action_links(partial_base);
+        this.check_visible_by_cascade_count_max(partial_base);
     },
 
     link_to_edit: function(event){
@@ -206,8 +264,10 @@ Object.extend(PartialScaffold.prototype, {
     },
 
     link_to_destroy: function(event){
+        this.logIfVerbose("link_to_destroy");
         var link = Event.element(event);
         var partial_base = Element.getAncestorByClassName(link, this.partial_base_class);
+        var partial_association = Element.getAncestorByClassName(link, this.partial_association_class);
         new Ajax.Updater(partial_base, link.href, {
             method: 'post',
             evalScripts: true,
@@ -217,6 +277,7 @@ Object.extend(PartialScaffold.prototype, {
                 if (partial_base.innerHTML == ""){
                     Element.remove(partial_group);
                 }
+                this.check_visible_by_cascade_count_max(partial_association);
             }.bind(this)
         });
     },
