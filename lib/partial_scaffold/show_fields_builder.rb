@@ -87,7 +87,7 @@ module PartialScaffold
     # for selectable_attr plugin
     if (Module.const_get(:SelectableAttr) rescue nil)
       
-      class CheckBoxGroupBuilder < SelectableAttr::Helpers::CheckBoxGroupHelper::Builder
+      class CheckBoxGroupBuilder < ::SelectableAttrRails::Helpers::CheckBoxGroupHelper::Builder
         def check_box
           @entry_hash[:select] ? '✓' : '□'
         end
@@ -110,7 +110,7 @@ module PartialScaffold
         end
       end
       
-      class RadioButtonGroupBuilder < SelectableAttr::Helpers::RadioButtonGroupHelper::Builder
+      class RadioButtonGroupBuilder < SelectableAttrRails::Helpers::RadioButtonGroupHelper::Builder
         def radio_button(options = nil)
           @entry_hash[:id] == @object.send(@method) ? '◉' : '○'
         end
