@@ -75,6 +75,24 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
       end
     end
     
+    def input_type
+      @input_type ||= 
+        case field_type
+          when :text_field       then 'input'
+          when :datetime_select  then 'select'
+          when :date_select      then 'select'
+          when :text_field       then 'input'
+          when :text_area        then 'textarea'
+          when :check_box        then 'input'
+          when :text             then "textarea"
+          when :belongs_to_field then 'input'
+          when :select           then 'select'
+          when :check_box_group  then 'input'
+          else
+            "input"
+        end
+    end
+
     def data_in_functional_test
       if selectable_attr_type and selectable_attr_enum
         case selectable_attr_type
@@ -91,13 +109,17 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
       when :datetime          then 'DateTime.now'
       when :timestamp, :time  then 'Time.now'
       when :date              then 'Date.today'
-      when :string            then "'some #{name}'"
+      when :string            then "\"some #{name}\""
       when :text              then "\"some #{name}\ninclude multilines\""
       else
         "'some #{name}'"
       end
     end
     
+    def default_value
+      data_in_functional_test
+    end
+
     def name_to_show
       case selectable_attr_type
       when :single
@@ -142,13 +164,22 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
                 :controller_resource_name,
                 :route_primary_key_name,
                 :controller_reflections,
-                :attrs_expression_for_test
+                :attrs_expression_for_test,
+                :default_file_extension
   
   alias_method  :controller_table_name, :controller_plural_name
 
   def initialize(runtime_args, runtime_options = {})
     super(runtime_args, runtime_options)
     begin
+      if Rails::VERSION::STRING < "2.0.0"
+        @resource_generator = "scaffold_resource"
+        @default_file_extension = "rhtml"
+      else
+        @resource_generator = "scaffold"
+        @default_file_extension = "html.erb"
+      end
+
       @model_class = class_name.constantize
       @controller_name = @args.shift || @name.pluralize
 
@@ -250,6 +281,9 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
   def manifest
     recorded_session = record do |m|
       begin
+        m.directory('lib')
+        m.template('ajax_respondable.rb', 'lib/ajax_respondable.rb')
+
         m.directory('public/stylesheets')
         m.template('partial_scaffold.js', 'public/javascripts/partial_scaffold.js')
         m.template('verboseable.js', 'public/javascripts/verboseable.js')
@@ -259,9 +293,14 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
         m.directory(File.join('app/helpers', controller_class_path))
         m.directory(File.join('app/views', controller_class_path, controller_file_name))
         m.directory(File.join('app/views/layouts', controller_class_path))
-        m.directory(File.join('test/functional', controller_class_path))
-        
-        
+        if options[:rspec]
+          m.directory(File.join('spec/controllers', controller_class_path))
+          m.directory(File.join('spec/helpers', controller_class_path))
+          m.directory(File.join('spec/views', controller_class_path, controller_file_name))
+        else
+          m.directory(File.join('test/functional', controller_class_path))
+        end
+
         # m.class_collisions(controller_class_path, "#{controller_class_name}Controller", "#{controller_class_name}Helper")
 
         m.template('controller.rb', 
@@ -270,8 +309,23 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
         m.template('helper.rb',
           File.join('app/helpers', controller_class_path, "#{controller_file_name}_helper.rb"))
 
-        m.template('functional_test.rb',
-          File.join('test/functional', controller_class_path, "#{controller_file_name}_controller_test.rb"))
+        if options[:rspec]
+          m.template('rspec/controller_spec.rb',
+            File.join('spec/controllers', controller_class_path, "#{controller_file_name}_controller_spec.rb"))
+          m.template('rspec/helper_spec.rb',
+            File.join('spec/helpers', class_path, "#{controller_file_name}_helper_spec.rb"))
+          m.template("rspec/edit_erb_spec.rb",
+            File.join('spec/views', controller_class_path, controller_file_name, "edit.#{default_file_extension}_spec.rb"))
+          m.template("rspec/index_erb_spec.rb",
+            File.join('spec/views', controller_class_path, controller_file_name, "index.#{default_file_extension}_spec.rb"))
+          m.template("rspec/new_erb_spec.rb",
+            File.join('spec/views', controller_class_path, controller_file_name, "new.#{default_file_extension}_spec.rb"))
+          m.template("rspec/show_erb_spec.rb",
+            File.join('spec/views', controller_class_path, controller_file_name, "show.#{default_file_extension}_spec.rb"))
+        else
+          m.template('functional_test.rb',
+            File.join('test/functional', controller_class_path, "#{controller_file_name}_controller_test.rb"))
+        end
 
         m.template(
           "layout.html.erb",
@@ -334,10 +388,12 @@ class PartialScaffoldGenerator < Rails::Generator::NamedBase
   def add_options!(opt)
     opt.separator ''
     opt.separator 'Options:'
+    opt.on('-r', "--rspec",
+      "Generate RSpec files in spec/controllers") { |v| options[:rspec] = true }
     opt.on("--add-timestamps",
-      "Add timestamps to the view files for this model") { |v| options[:add_timestamps] = v }
-    opt.on("--ignore-selectable-attr",
-      "Don't generate field for selectable_attr plugin") { |v| options[:ignore_selectable_attr] = v }
+      "Add timestamps to the view files for this model") { |v| options[:add_timestamps] = true }
+    opt.on('-S', "--ignore-selectable-attr",
+      "Don't generate field for selectable_attr plugin") { |v| options[:ignore_selectable_attr] = true }
   end
   
 end

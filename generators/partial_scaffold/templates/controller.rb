@@ -1,5 +1,5 @@
 class <%= controller_class_name %>Controller < ApplicationController
-  include PartialScaffold::RenderPartialOnXhr
+  include AjaxRespondable
 
   # GET /<%= table_name %>
   # GET /<%= table_name %>.xml
@@ -7,7 +7,7 @@ class <%= controller_class_name %>Controller < ApplicationController
     @<%= controller_plural_name %> = <%= class_name %>.find(:all)
 
     respond_to do |format|
-      format.html # index.html.erb
+      format.html { render_action_or_partial }
       format.xml  { render :xml => @<%= controller_plural_name %> }
     end
   end
@@ -18,7 +18,7 @@ class <%= controller_class_name %>Controller < ApplicationController
     @<%= controller_singular_name %> = <%= class_name %>.find(params[:id])
 
     respond_to do |format|
-      format.html # show.html.erb
+      format.html { render_action_or_partial }
       format.xml  { render :xml => @<%= controller_singular_name %> }
     end
   end
@@ -32,7 +32,7 @@ class <%= controller_class_name %>Controller < ApplicationController
 <% end -%>
 
     respond_to do |format|
-      format.html # new.html.erb
+      format.html { render_action_or_partial }
       format.xml  { render :xml => @<%= controller_singular_name %> }
     end
   end
@@ -40,6 +40,7 @@ class <%= controller_class_name %>Controller < ApplicationController
   # GET /<%= table_name %>/1/edit
   def edit
     @<%= controller_singular_name %> = <%= class_name %>.find(params[:id])
+    render_action_or_partial
   end
 
   # POST /<%= table_name %>
@@ -50,10 +51,10 @@ class <%= controller_class_name %>Controller < ApplicationController
     respond_to do |format|
       if @<%= controller_singular_name %>.save
         flash[:notice] = '<%= class_name %> was successfully created.'
-        format.html { redirect_to(:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id) }
+        format.html { redirect_to_or_render(:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id) }
         format.xml  { render :xml => @<%= controller_singular_name %>, :status => :created, :location => @<%= controller_singular_name %> }
       else
-        format.html { render :action => "new" }
+        format.html { render_action_or_partial("new") }
         format.xml  { render :xml => @<%= controller_singular_name %>.errors, :status => :unprocessable_entity }
       end
     end
@@ -67,10 +68,10 @@ class <%= controller_class_name %>Controller < ApplicationController
     respond_to do |format|
       if @<%= controller_singular_name %>.update_attributes(params[:<%= controller_singular_name %>])
         flash[:notice] = '<%= class_name %> was successfully updated.'
-        format.html { redirect_to(:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id) }
+        format.html { redirect_to_or_render(:controller => '<%= controller_name %>', :action => 'show', :id => @<%= controller_singular_name %>.id) }
         format.xml  { head :ok }
       else
-        format.html { render :action => "edit" }
+        format.html { render_action_or_partial("edit") }
         format.xml  { render :xml => @<%= controller_singular_name %>.errors, :status => :unprocessable_entity }
       end
     end
@@ -91,7 +92,7 @@ class <%= controller_class_name %>Controller < ApplicationController
         }
         format.xml  { head :ok }
       else
-        format.html { render :action => 'edit' }
+        format.html { render_action_or_partial("edit") }
         format.xml  { render :xml => @<%= controller_singular_name %>.errors, :status => :unprocessable_entity }
       end
     end
